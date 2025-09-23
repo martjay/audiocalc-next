@@ -65,4 +65,4 @@ jobs:
         with:
           name: ${{ matrix.artifactName }}
           path: |
-            src-tauri/target/release/bundle/**/**
+            src-tauri/target/**/release/bundle/**/**
