@@ -726,7 +726,7 @@
     </div>
 
     <!-- BPM测速弹窗 -->
-    <div id="bpmModalWrap" role="dialog" aria-modal="true" aria-labelledby="bpm-dialog-title" style="position: fixed; inset: 0; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); background: rgba(0,0,0,0.35); z-index: 9999;">
+    <div id="bpmModalWrap" role="dialog" aria-modal="true" aria-labelledby="bpm-dialog-title" style="position: fixed; inset: 0; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); background: rgba(0,0,0,0.35); z-index: 2147483647; pointer-events: auto;">
         <div id="bpmModal" style="width: min(520px, 92vw); background: var(--bg-panel-strong); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; transform: translateY(12px); opacity: 0; transition: 240ms ease;">
             <div id="bpm-dialog-title" style="padding: 16px 18px; border-bottom: 1px solid rgba(255,255,255,0.06);">BPM 计算工具</div>
             <div style="padding: 18px; display: grid; gap: 12px;">
@@ -1208,7 +1208,12 @@
             function bindEvents() {
                 elements.calculateButton.addEventListener('click', calculateAll);
                 elements.bpmInput.addEventListener('input', calculateAll);
-                elements.manualBpmButton.addEventListener('click', openBpm);
+                if (elements.manualBpmButton) elements.manualBpmButton.addEventListener('click', openBpm);
+                // 兜底委托：若绑定丢失或元素被替换
+                document.addEventListener('click', (e)=>{
+                    const t = e.target && e.target.closest && e.target.closest('#manualBpmButton');
+                    if (t) openBpm();
+                });
                 const openTapBtn = document.getElementById('openTap');
                 if (openTapBtn) openTapBtn.addEventListener('click', openBpm);
                 elements.closeBpmCalculator.addEventListener('click', closeBpm);
@@ -1217,6 +1222,7 @@
                 document.addEventListener('keydown', (e)=>{
                     if (e.code==='Space' && isTapActive) { e.preventDefault(); handleTap(); }
                     if (e.code==='Escape' && isTapActive) { closeBpm(); }
+                    if (e.code==='F2') { openBpm(); }
                     if (e.code==='Enter') { calculateAll(); }
                 });
 
