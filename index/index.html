@@ -277,6 +277,10 @@
             font-size: 16px;
             transition: 180ms ease;
         }
+        /* 占位符更小更清晰 */
+        .input input::placeholder { font-size: 12px; opacity: .8; color: #aab3cc; }
+        /* 倒计时/测速阶段：占位符红色强调 */
+        .input input.bpm-hint::placeholder { color: #ff5a5a; }
 
         .input input[type="number"]:focus {
             background: rgba(255,255,255,0.12);
@@ -533,6 +537,10 @@
         .label-tone-5, .label-tone-5 a { color: #ceb6ff; }
         .label-tone-6, .label-tone-6 a { color: #a7c0ff; }
 
+        /* 无JS弹窗开关（checkbox） */
+        #bpmToggle { position: fixed; opacity: 0; pointer-events: none; }
+        #bpmToggle:checked ~ #bpmModalWrap { display: flex !important; }
+
         /* 输入聚焦高光 */
         .input:focus-within { box-shadow: var(--shadow), 0 0 0 1px rgba(122,162,255,0.35) inset, 0 0 24px rgba(122,162,255,0.12); }
 
@@ -600,7 +608,8 @@
                     <input id="bpm" type="number" min="1" step="1" value="120" placeholder="输入BPM" aria-label="歌曲速度BPM">
                 </div>
                 <button id="calculateButton" class="btn primary" aria-label="计算全部参数">计算参数</button>
-                <button id="manualBpmButton" class="btn accent" aria-haspopup="dialog" aria-controls="bpmModalWrap">手动测速</button>
+                <input type="checkbox" id="bpmToggle" />
+                <label for="bpmToggle" class="btn accent" style="user-select:none;">手动测速</label>
             </div>
         </div>
 
@@ -1170,8 +1179,23 @@
 
             // 手动测速
             let tapTimes = []; let isTapActive = false; let bpmApplyTimer = null; let lastComputedBpm = 0; let bpmHintTimer = null;
-            function openBpm() { elements.bpmModalWrap.style.display = 'flex'; setTimeout(()=>{ elements.bpmModal.style.transform='translateY(0)'; elements.bpmModal.style.opacity='1'; }, 10); isTapActive=true; }
-            function closeBpm() { elements.bpmModal.style.transform='translateY(12px)'; elements.bpmModal.style.opacity='0'; setTimeout(()=>{ elements.bpmModalWrap.style.display='none'; }, 220); isTapActive=false; }
+            function openBpm() {
+                if (!elements.bpmModalWrap || !elements.bpmModal) return;
+                elements.bpmModalWrap.style.display = 'flex';
+                // 保障层级与点击可达
+                elements.bpmModalWrap.style.zIndex = '2147483647';
+                elements.bpmModalWrap.style.pointerEvents = 'auto';
+                setTimeout(()=>{
+                    elements.bpmModal.style.transform='translateY(0)';
+                    elements.bpmModal.style.opacity='1';
+                }, 10);
+                isTapActive=true;
+                // 可视化提示，便于发布版确认
+                try { showCopyToast('已打开手动测速'); } catch(_) {}
+            }
+            // 暴露兜底方法给 inline/onClick 调用（发布版部分环境下事件委托可能被禁用）
+            window.openBpmPublic = () => { try { openBpm(); } catch(_) {} };
+            function closeBpm() { elements.bpmModal.style.transform='translateY(12px)'; elements.bpmModal.style.opacity='0'; setTimeout(()=>{ elements.bpmModalWrap.style.display='none'; }, 220); isTapActive=false; try { elements.bpmInput.setAttribute('placeholder','输入BPM'); } catch(_) {} }
             function resetTap() { tapTimes = []; lastComputedBpm = 0; if (bpmApplyTimer) { clearTimeout(bpmApplyTimer); bpmApplyTimer = null; } if (bpmHintTimer) { clearTimeout(bpmHintTimer); bpmHintTimer = null; } const hint=document.getElementById('bpmDoneHint'); if(hint){ hint.style.opacity='0'; } elements.bpmDisplay.textContent = '0 BPM'; }
             function handleTap() {
                 const now = Date.now(); tapTimes.push(now); if (tapTimes.length>21) tapTimes.shift();
@@ -1189,6 +1213,8 @@
                 const bpm = Math.round(60000/avg);
                 lastComputedBpm = bpm;
                 elements.bpmDisplay.textContent = bpm + ' BPM';
+                // 测速中保持提示
+                try { if (isTapActive) elements.bpmInput.setAttribute('placeholder','请按空格测速'); } catch(_) {}
                 // 3秒无操作后再写入输入框并计算，避免实时抖动
                 if (bpmApplyTimer) clearTimeout(bpmApplyTimer);
                 const hintEl = document.getElementById('bpmDoneHint');
@@ -1202,13 +1228,20 @@
                         if (bpmHintTimer) clearTimeout(bpmHintTimer);
                         bpmHintTimer = setTimeout(()=>{ hintEl.style.opacity='0'; }, 1800);
                     }
+                    // 完成后恢复占位符
+                    try { elements.bpmInput.setAttribute('placeholder','输入BPM'); } catch(_) {}
                 }, 3000);
             }
 
             function bindEvents() {
                 elements.calculateButton.addEventListener('click', calculateAll);
                 elements.bpmInput.addEventListener('input', calculateAll);
-                if (elements.manualBpmButton) elements.manualBpmButton.addEventListener('click', openBpm);
+                if (elements.manualBpmButton) {
+                    elements.manualBpmButton.addEventListener('click', openBpm);
+                    elements.manualBpmButton.addEventListener('pointerup', openBpm);
+                    // 兜底：添加内联 onClick（CSP 已允许 inline）
+                    try { elements.manualBpmButton.setAttribute('onclick','window.openBpmPublic && window.openBpmPublic()'); } catch(_) {}
+                }
                 // 兜底委托：若绑定丢失或元素被替换
                 document.addEventListener('click', (e)=>{
                     const t = e.target && e.target.closest && e.target.closest('#manualBpmButton');
@@ -1224,6 +1257,41 @@
                     if (e.code==='Escape' && isTapActive) { closeBpm(); }
                     if (e.code==='F2') { openBpm(); }
                     if (e.code==='Enter') { calculateAll(); }
+                });
+
+                // 在 BPM 输入框按空格键：进入手动测速（倒计时3秒）
+                let enteringTapMode = false;
+                function startManualFromInput(){
+                    if (enteringTapMode) return;
+                    enteringTapMode = true;
+                    const prevPh = elements.bpmInput.getAttribute('placeholder') || '输入BPM';
+                    elements.bpmInput.value = '';
+                    elements.bpmInput.classList.add('bpm-hint');
+                    elements.bpmInput.setAttribute('placeholder','即将开始测速（3）');
+                    openBpm();
+                    const seq = ['3','2','1']; let i = 0;
+                    function step(){
+                        if (!elements.bpmDisplay) { enteringTapMode=false; return; }
+                        elements.bpmDisplay.textContent = seq[i] + ' …';
+                        i++;
+                        if (i < seq.length) {
+                            elements.bpmInput.setAttribute('placeholder',`即将开始测速（${seq[i]}）`);
+                            setTimeout(step, 800);
+                        } else {
+                            isTapActive = true;
+                            elements.bpmDisplay.textContent = '0 BPM';
+                            elements.bpmInput.setAttribute('placeholder','请按空格测速');
+                            enteringTapMode=false;
+                            // 1 秒后恢复占位符，以免干扰手动输入
+                            setTimeout(()=>{ if(!isTapActive){ elements.bpmInput.setAttribute('placeholder', prevPh); elements.bpmInput.classList.remove('bpm-hint'); } }, 1000);
+                        }
+                    }
+                    setTimeout(step, 300);
+                }
+                elements.bpmInput.addEventListener('keydown', (ev)=>{
+                    if (ev.code === 'Space' || ev.key === ' ' || ev.key === 'Spacebar'){
+                        ev.preventDefault(); elements.bpmInput.blur(); startManualFromInput();
+                    }
                 });
 
                 // 事件委托，避免偶发绑定失败或后续动态更新导致的失效
