@@ -19,6 +19,9 @@ jobs:
           - platform: macos-latest
             args: "--target aarch64-apple-darwin"
             artifactName: "AudioCalc-macOS-arm64"
+          - platform: macos-latest
+            args: "--target x86_64-apple-darwin"
+            artifactName: "AudioCalc-macOS-x64"
           - platform: ubuntu-latest
             args: "--target x86_64-unknown-linux-gnu"
             artifactName: "AudioCalc-Linux"
