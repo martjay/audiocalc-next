@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXT · 音频计算器</title>
+    <style>
+        :root {
+            --bg-deep: #0a0f1a;
+            --bg-panel: rgba(18, 24, 38, 0.7);
+            --bg-panel-strong: rgba(18, 24, 38, 0.9);
+            --glass: rgba(255,255,255,0.06);
+            --primary: #7aa2ff;
+            --secondary: #7ef0d2;
+            --accent: #ff87b7;
+            --warning: #ffb86b;
+            --text: #e5edff;
+            --muted: #aab3cc;
+            --shadow: 0 10px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            color: var(--text);
+            background: var(--bg-deep);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            overflow: hidden;
+        }
+
+        /* 自定义滚动条（WebKit/Chromium） */
+        *::-webkit-scrollbar { width: 12px; height: 12px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(122,162,255,0.45), rgba(255,135,183,0.35));
+            border-radius: 10px;
+            border: 2px solid rgba(10,15,26,0.6);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+        }
+        *::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, rgba(122,162,255,0.65), rgba(126,240,210,0.55)); }
+        *::-webkit-scrollbar-corner { background: transparent; }
+
+        /* Firefox 滚动条 */
+        * { scrollbar-width: thin; scrollbar-color: rgba(122,162,255,0.6) transparent; }
+
+        /* 星空背景画布 */
+        #bg-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            background: radial-gradient(1200px 700px at 20% 10%, rgba(50,80,160,0.18), transparent),
+                        radial-gradient(1000px 600px at 80% 20%, rgba(200,80,150,0.15), transparent),
+                        radial-gradient(1400px 900px at 60% 70%, rgba(60,150,120,0.18), transparent),
+                        linear-gradient(180deg, #050811, #0a0f1a 40%, #0b1220);
+        }
+
+        /* 顶层特效画布（烟花） */
+        #fx-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9998; /* 置于页面最上层下，仅次于弹窗 */
+            pointer-events: none; /* 不阻挡点击 */
+        }
+
+        /* 流星画布（在内容层之上、烟花之下） */
+        #meteor-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw; height: 100vh;
+            z-index: 9997;
+            pointer-events: none;
+        }
+
+        /* 极光背景层（随时间变色） */
+        .aurora-layer {
+            position: fixed;
+            inset: -10vh -10vw;
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(40px) saturate(130%);
+            mix-blend-mode: screen;
+            animation: auroraFlow 22s linear infinite;
+            opacity: 0.85;
+        }
+
+        /* 使用多重径向渐变模拟极光带 */
+        .aurora-layer::before,
+        .aurora-layer::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(40vw 24vh at 15% 20%, rgba(100,180,255,0.35), transparent 60%),
+                radial-gradient(50vw 28vh at 70% 18%, rgba(180,120,255,0.3), transparent 65%),
+                radial-gradient(60vw 26vh at 60% 70%, rgba(120,255,210,0.28), transparent 60%),
+                radial-gradient(36vw 20vh at 30% 85%, rgba(255,160,200,0.22), transparent 65%),
+                radial-gradient(44vw 22vh at 90% 65%, rgba(255,220,140,0.18), transparent 70%);
+            animation: auroraHue 40s ease-in-out infinite alternate;
+        }
+
+        .aurora-layer::after {
+            filter: blur(20px);
+            opacity: 0.8;
+            transform: translateY(-2vh);
+            mix-blend-mode: screen;
+            animation-duration: 28s;
+        }
+
+        @keyframes auroraFlow {
+            0% { transform: translateX(-2vw) translateY(-1vh) rotate(0.2deg); }
+            50% { transform: translateX(2vw) translateY(1vh) rotate(-0.2deg); }
+            100% { transform: translateX(-2vw) translateY(-1vh) rotate(0.2deg); }
+        }
+
+        @keyframes auroraHue {
+            0% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(60deg); }
+            100% { filter: hue-rotate(120deg); }
+        }
+
+        /* 朦胧印象派雾层 */
+        .mist-layer {
+            position: fixed;
+            inset: -10vh -10vw;
+            background: radial-gradient(40vw 40vh at 10% 20%, rgba(88,120,255,0.06), transparent),
+                        radial-gradient(50vw 40vh at 80% 30%, rgba(255,120,180,0.06), transparent),
+                        radial-gradient(60vw 50vh at 60% 80%, rgba(80,220,190,0.05), transparent);
+            filter: blur(30px) saturate(120%);
+            pointer-events: none;
+            z-index: -1;
+            animation: mistFloat 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes mistFloat {
+            0% { transform: translateY(-2vh) translateX(0); }
+            100% { transform: translateY(2vh) translateX(1vw); }
+        }
+
+        /* 页面容器 */
+        .container {
+            position: relative;
+            width: min(1200px, 92vw);
+            margin: 4vh auto;
+            height: 92vh;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 16px;
+            z-index: 5; /* 整个内容层提升到标题之上 */
+        }
+
+        /* 顶部标题 */
+        .title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 22px;
+            background: linear-gradient(180deg, var(--bg-panel), rgba(12,18,30,0.5));
+            border-radius: 16px;
+            /* 将投影改由伪元素承担，避免遮挡上浮卡片 */
+            box-shadow: none;
+            backdrop-filter: blur(10px) saturate(120%);
+            position: relative;
+            z-index: 1; /* 标题层低于内容层 */
+        }
+
+        .title h1 {
+            margin: 0;
+            font-size: clamp(22px, 3.6vw, 34px);
+            letter-spacing: 0.5px;
+            text-shadow: 0 6px 22px rgba(122,162,255,0.25);
+        }
+
+        /* 标题“音频波形”风格动态渐变文字 */
+        /* 新：霓虹发光标题样式（基于用户示例改造以适配标题区域） */
+        :root { --glow-color: #7aa2ff; --glow-hover-color: #7aa2ff; }
+        .glow-title {
+            position: relative;
+            display: inline-block;
+            color: var(--glow-color);
+            padding: 0.1em 0.5em;
+            border: 0.12em solid var(--glow-color);
+            border-radius: 0.5em;
+            background: none;
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            box-shadow: inset 0 0 0.5em 0 var(--glow-color), 0 0 0.5em 0 var(--glow-color);
+            animation: border-flicker 2s linear infinite;
+            -webkit-text-size-adjust: 100%;
+        }
+        .glow-title::before {
+            content: "";
+            position: absolute; inset: 0; opacity: .7; filter: blur(1em);
+            transform: translateY(120%) rotateX(95deg) scale(1, .35);
+            background: var(--glow-color);
+            pointer-events: none;
+        }
+        .glow-title::after {
+            content: ""; position: absolute; inset: 0; opacity: 0; z-index: -1;
+            background-color: var(--glow-color); box-shadow: 0 0 2em .2em var(--glow-color);
+            transition: opacity 100ms linear;
+        }
+        .glowing-txt {
+            -webkit-text-shadow: 0 0 0.125em rgba(255,255,255,.3), 0 0 .45em var(--glow-color);
+            text-shadow: 0 0 0.125em rgba(255,255,255,.3), 0 0 .45em var(--glow-color);
+            animation: text-flicker 3s linear infinite;
+        }
+        .faulty-letter { opacity: .5; animation: faulty-flicker 2s linear infinite; }
+        .glow-title:hover { animation: none; }
+        /* 仅改变文字的外发光为浅黄色，其他边框与外圈保持原主色 */
+        .glow-title:hover .glowing-txt, .glow-title:hover .faulty-letter { animation: none; opacity: 1; text-shadow: 0 0 0.2em rgba(255,255,200,.6), 0 0 .9em var(--glow-hover-color); }
+        .glow-title:hover::after { opacity: 1; }
+        @keyframes faulty-flicker {
+            0%{opacity:.1} 2%{opacity:.1} 4%{opacity:.5} 19%{opacity:.5} 21%{opacity:.1} 23%{opacity:1}
+            80%{opacity:.5} 83%{opacity:.4} 87%{opacity:1}
+        }
+        @keyframes text-flicker {
+            0%{opacity:.1} 2%{opacity:1} 8%{opacity:.1} 9%{opacity:1} 12%{opacity:.1}
+            20%{opacity:1} 25%{opacity:.3} 30%{opacity:1} 70%{opacity:.7} 72%{opacity:.2} 77%{opacity:.9} 100%{opacity:.9}
+        }
+        @keyframes border-flicker { 0%{opacity:.1} 2%{opacity:1} 4%{opacity:.1} 8%{opacity:1} 70%{opacity:.7} 100%{opacity:1} }
+
+        /* 标题阴影由下沉伪元素实现，处于标题之下，不遮挡内容 */
+        .title::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            box-shadow: 0 18px 40px rgba(0,0,0,0.45), 0 2px 0 rgba(255,255,255,0.04) inset;
+            z-index: -2; /* 更深一层，确保所有上浮元素都在其上方 */
+            pointer-events: none;
+        }
+
+        /* 顶部输入区 */
+        .top-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+            box-shadow: var(--shadow);
+        }
+
+        /* BPM 标签跑马灯色彩动画 */
+        .bpm-label {
+            color: transparent; -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; background-clip: text;
+            background-image: linear-gradient(90deg, #ff5ac8, #b478ff, #7aa2ff, #7ef0d2, #ffb86b, #ff5ac8);
+            background-size: 400% 100%;
+            animation: bpmMarquee 8s linear infinite;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        @keyframes bpmMarquee { 0% { background-position: 0% 50%; } 100% { background-position: 400% 50%; } }
+
+        .input input[type="number"] {
+            width: 120px;
+            padding: 10px 12px;
+            border: none;
+            outline: none;
+            color: var(--text);
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: 180ms ease;
+        }
+
+        .input input[type="number"]:focus {
+            background: rgba(255,255,255,0.12);
+            box-shadow: 0 0 0 2px rgba(122,162,255,0.35) inset;
+        }
+
+        /* 让自定义阈值输入与BPM输入一致 */
+        .cc-input {
+            width: 120px;
+            padding: 10px 12px;
+            border: none;
+            outline: none;
+            color: var(--text);
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: 180ms ease;
+            box-shadow: var(--shadow);
+        }
+
+        .cc-input:focus {
+            background: rgba(255,255,255,0.12);
+            box-shadow: 0 0 0 2px rgba(122,162,255,0.35) inset, var(--shadow);
+        }
+
+        /* 统一数字输入的加减控件样式 */
+        input[type=number] { -moz-appearance: textfield; }
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        /* 半透明皮肤质感按钮 */
+        .btn {
+            position: relative;
+            appearance: none;
+            border: none;
+            color: var(--text);
+            background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+            border-radius: 14px;
+            padding: 10px 14px;
+            box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,0.06) inset, 0 0 0 rgba(122,162,255,0);
+            transition: transform 180ms ease, box-shadow 200ms ease, background 200ms ease, filter 200ms ease;
+            overflow: hidden;
+            display: inline-flex; align-items: center; justify-content: center; /* 统一按钮与链接表现 */
+            text-decoration: none; /* 取消链接默认下划线，避免硬边 */
+        }
+
+        .btn::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(600px 200px at -10% -50%, rgba(255,255,255,0.35), transparent 60%),
+                        linear-gradient(180deg, transparent 60%, rgba(255,255,255,0.08));
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* 霓虹流动渐变背景（悬浮时启动） */
+        .btn:hover {
+            transform: translateY(-1px);
+            background: linear-gradient(90deg, #03a9f4, #f441a4, #ffeb3b, #03a9f4);
+            background-size: 400%;
+            animation: btnGradient 8s linear infinite;
+            box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,0.08) inset, 0 10px 24px rgba(122,162,255,0.22);
+        }
+        .btn:active { transform: translateY(0); filter: saturate(120%); box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,0.06) inset, 0 4px 16px rgba(122,162,255,0.18); }
+
+        .btn.primary { color: #dfe7ff; background: linear-gradient(180deg, rgba(122,162,255,0.35), rgba(122,162,255,0.12)); }
+        .btn.accent { color: #ffe2ef; background: linear-gradient(180deg, rgba(255,135,183,0.35), rgba(255,135,183,0.12)); }
+
+        /* 外发光环（悬浮时显现并流动） */
+        .btn::after {
+            content: "";
+            position: absolute;
+            left: -6px; right: -6px; top: -6px; bottom: -6px;
+            border-radius: 20px;
+            background: linear-gradient(90deg, #03a9f4, #f441a4, #ffeb3b, #03a9f4);
+            background-size: 400%;
+            filter: blur(18px);
+            opacity: 0;
+            transition: opacity 200ms ease;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .btn:hover::after { opacity: 1; animation: btnGradient 8s linear infinite; }
+
+        @keyframes btnGradient { 0% { background-position: 0% } 100% { background-position: 400% } }
+
+        /* 内容区域布局 */
+        .content {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-auto-rows: minmax(180px, auto);
+            gap: 16px;
+            overflow: auto;
+            padding-bottom: 8px;
+        }
+
+        .card {
+            grid-column: span 6;
+            background: var(--bg-panel);
+            border-radius: 16px;
+            box-shadow: none; /* 改用drop-shadow避免被裁剪成直角 */
+            filter: drop-shadow(0 14px 34px rgba(0,0,0,0.45)) drop-shadow(0 1px 0 rgba(255,255,255,0.04));
+            backdrop-filter: blur(10px) saturate(120%);
+            /* 恢复裁剪，避免底部出现直角溢出痕迹 */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 220ms ease, box-shadow 220ms ease;
+            position: relative;
+            z-index: 0;
+        }
+
+        /* 底部缝隙隐藏：在卡片内侧叠一层渐隐遮罩，避免出现直角痕迹 */
+        /* 伪元素遮罩删除，改用drop-shadow渲染外部阴影 */
+
+        .card:hover { transform: translateY(-4px); filter: drop-shadow(0 22px 44px rgba(0,0,0,0.6)) drop-shadow(0 1px 0 rgba(255,255,255,0.05)); z-index: 10; }
+
+        .card h2 {
+            margin: 0;
+            padding: 14px 16px;
+            font-size: 16px;
+            letter-spacing: 0.3px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            z-index: 6; /* 标签栏自身抬高，避免被任何上层阴影压住 */
+        }
+
+        /* 动态渐变文字效果（仅改变文字，不改背景） */
+        .anim-text {
+            color: transparent; -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; background-clip: text;
+            background-image: linear-gradient(90deg, #7aa2ff, #7ef0d2, #ffb86b, #ff87b7, #b478ff, #7aa2ff);
+            background-size: 300% 100%;
+            animation: animHue 6s linear infinite;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+        @keyframes animHue { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+
+        /* 彩色标签栏（按模块上色） */
+        .tag-reverb h2 {
+            background: linear-gradient(180deg, rgba(122,162,255,0.22), rgba(122,162,255,0.07));
+            border-bottom-color: rgba(122,162,255,0.35);
+            box-shadow: inset 0 2px 0 rgba(122,162,255,0.35);
+        }
+        .tag-reverb h2::before {
+            content: ""; position: absolute; left: 0; right: 0; top: 0; height: 10px;
+            border-top-left-radius: 16px; border-top-right-radius: 16px;
+            background: linear-gradient(180deg, rgba(122,162,255,0.65), rgba(122,162,255,0));
+            pointer-events: none;
+        }
+        .tag-delay h2 {
+            background: linear-gradient(180deg, rgba(126,240,210,0.22), rgba(126,240,210,0.07));
+            border-bottom-color: rgba(126,240,210,0.35);
+            box-shadow: inset 0 2px 0 rgba(126,240,210,0.35);
+        }
+        .tag-delay h2::before {
+            content: ""; position: absolute; left: 0; right: 0; top: 0; height: 10px;
+            border-top-left-radius: 16px; border-top-right-radius: 16px;
+            background: linear-gradient(180deg, rgba(126,240,210,0.65), rgba(126,240,210,0));
+            pointer-events: none;
+        }
+        .tag-preset h2 {
+            background: linear-gradient(180deg, rgba(255,135,183,0.22), rgba(255,135,183,0.07));
+            border-bottom-color: rgba(255,135,183,0.35);
+            box-shadow: inset 0 2px 0 rgba(255,135,183,0.35);
+        }
+        .tag-preset h2::before {
+            content: ""; position: absolute; left: 0; right: 0; top: 0; height: 10px;
+            border-top-left-radius: 16px; border-top-right-radius: 16px;
+            background: linear-gradient(180deg, rgba(255,135,183,0.65), rgba(255,135,183,0));
+            pointer-events: none;
+        }
+        .tag-custom h2 {
+            background: linear-gradient(180deg, rgba(255,184,107,0.22), rgba(255,184,107,0.07));
+            border-bottom-color: rgba(255,184,107,0.35);
+            box-shadow: inset 0 2px 0 rgba(255,184,107,0.35);
+        }
+        .tag-custom h2::before {
+            content: ""; position: absolute; left: 0; right: 0; top: 0; height: 10px;
+            border-top-left-radius: 16px; border-top-right-radius: 16px;
+            background: linear-gradient(180deg, rgba(255,184,107,0.65), rgba(255,184,107,0));
+            pointer-events: none;
+        }
+
+        .card .body { padding: 12px 14px; overflow: auto; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th, td { padding: 10px 8px; text-align: left; font-size: 14px; }
+        thead tr { background: rgba(255,255,255,0.06); }
+        tbody tr { transition: 220ms ease; transform-style: preserve-3d; }
+        tbody tr:hover { background: rgba(255,255,255,0.05); transform: translateZ(2px); box-shadow: 0 10px 24px rgba(0,0,0,0.25); }
+
+        .result-item { transition: transform 220ms ease, background 220ms ease, color 180ms ease, text-shadow 180ms ease; border-radius: 8px; position: relative; overflow: visible; background: transparent; cursor: pointer; }
+        .result-item:hover { box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset; }
+
+        /* 渐变文字（仅改变字体颜色，不改单元格背景） */
+        .grad-text {
+            color: transparent !important;
+            background-color: transparent !important;
+            -webkit-background-clip: text !important;
+            background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            display: inline-block;
+            line-height: 1.25em;
+        }
+
+        /* 彩虹流动高亮效果（用于数值更新时） */
+        .result-item.flow-highlight::after {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            border-radius: 10px;
+            background: linear-gradient(90deg,
+                rgba(122,162,255,0.0) 0%,
+                rgba(122,162,255,0.65) 10%,
+                rgba(126,240,210,0.65) 30%,
+                rgba(255,184,107,0.65) 50%,
+                rgba(255,135,183,0.65) 70%,
+                rgba(180,120,255,0.65) 90%,
+                rgba(122,162,255,0.0) 100%
+            );
+            background-size: 300% 100%;
+            mix-blend-mode: screen;
+            filter: blur(2px) saturate(120%);
+            animation: rainbowShift 900ms ease, rainbowFade 900ms ease;
+            pointer-events: none;
+        }
+
+        @keyframes rainbowShift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        @keyframes rainbowFade {
+            0% { opacity: 0; }
+            15% { opacity: 0.95; }
+            100% { opacity: 0; }
+        }
+
+        /* 安全的彩色数值样式（非透明字体，无兼容性问题） */
+        .num-tone-1 { color: #8fb0ff; text-shadow: 0 0 10px rgba(143,176,255,.25); }
+        .num-tone-2 { color: #7ee9cf; text-shadow: 0 0 10px rgba(126,233,207,.22); }
+        .num-tone-3 { color: #ffc37e; text-shadow: 0 0 10px rgba(255,195,126,.2); }
+        .num-tone-4 { color: #ff95c0; text-shadow: 0 0 10px rgba(255,149,192,.22); }
+        .num-tone-5 { color: #be9bff; text-shadow: 0 0 10px rgba(190,155,255,.22); }
+        .num-tone-6 { color: #8fb0ff; text-shadow: 0 0 10px rgba(143,176,255,.25); }
+        .label-tone-1, .label-tone-1 a { color: #a7c0ff; }
+        .label-tone-2, .label-tone-2 a { color: #9ef0da; }
+        .label-tone-3, .label-tone-3 a { color: #ffd39f; }
+        .label-tone-4, .label-tone-4 a { color: #ffb0d1; }
+        .label-tone-5, .label-tone-5 a { color: #ceb6ff; }
+        .label-tone-6, .label-tone-6 a { color: #a7c0ff; }
+
+        /* 输入聚焦高光 */
+        .input:focus-within { box-shadow: var(--shadow), 0 0 0 1px rgba(122,162,255,0.35) inset, 0 0 24px rgba(122,162,255,0.12); }
+
+        /* 底部区域 */
+        .footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            color: var(--muted);
+            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px) saturate(120%);
+        }
+
+        /* 命令行打字效果（左下角文字） */
+        .type-caret {
+            position: relative;
+            font-variant-ligatures: none;
+            white-space: nowrap;
+        }
+        .type-caret::after {
+            content: "";
+            display: inline-block;
+            width: 8px; height: 1.1em;
+            margin-left: 4px;
+            background: rgba(229,237,255,0.75);
+            box-shadow: 0 0 8px rgba(229,237,255,0.6);
+            animation: caretBlink 1s steps(1) infinite;
+            vertical-align: -2px;
+        }
+        @keyframes caretBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+
+        /* 响应式 */
+        @media (max-width: 980px) { .card { grid-column: span 12; } }
+
+        /* 结果更新动画 */
+        @keyframes pulse {
+            0% { transform: scale(1); background: transparent; }
+            50% { transform: scale(1.03); background: rgba(122,162,255,0.18); }
+            100% { transform: scale(1); background: transparent; }
+        }
+
+        /* 错误提示与抖动效果 */
+        .hint { font-size: 12px; color: var(--warning); opacity: 0.9; }
+        .hide { display: none; }
+        @keyframes shakeX { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+        .shake { animation: shakeX 380ms ease; }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <div class="mist-layer"></div>
+    <div class="aurora-layer" aria-hidden="true"></div>
+    <canvas id="meteor-canvas" aria-hidden="true"></canvas>
+    <canvas id="fx-canvas" aria-hidden="true"></canvas>
+
+    <div class="container" aria-label="NEXT音频计算器">
+        <div class="title" role="banner">
+            <h1 aria-label="应用标题"><span class="glow-title"><span class="glowing-txt">NE<span class="faulty-letter">X</span>T · 音频计算器</span></span></h1>
+            <div class="top-controls">
+                <div class="input" aria-label="BPM输入">
+                    <span class="bpm-label">BPM</span>
+                    <input id="bpm" type="number" min="1" step="1" value="120" placeholder="输入BPM" aria-label="歌曲速度BPM">
+                </div>
+                <button id="calculateButton" class="btn primary" aria-label="计算全部参数">计算参数</button>
+                <button id="manualBpmButton" class="btn accent" aria-haspopup="dialog" aria-controls="bpmModalWrap">手动测速</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="card tag-reverb" style="grid-column: span 6;" aria-labelledby="reverb-title">
+                <h2 id="reverb-title"><span class="anim-text">混响参数</span></h2>
+                <div class="body">
+                    <table id="reverb-table">
+                        <thead>
+                            <tr>
+                                <th>混响类型</th>
+                                <th>Pre-Delay (ms)</th>
+                                <th>Decay (ms)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Hall</td><td class="result-item" id="hall-predelay">0</td><td class="result-item" id="hall-decaytime">0</td></tr>
+                            <tr><td>small Plate</td><td class="result-item" id="smallplate-predelay">0</td><td class="result-item" id="smallplate-decaytime">0</td></tr>
+                            <tr><td>fat Plate</td><td class="result-item" id="fatplate-predelay">0</td><td class="result-item" id="fatplate-decaytime">0</td></tr>
+                            <tr><td>Large Room</td><td class="result-item" id="largeroom-predelay">0</td><td class="result-item" id="largeroom-decaytime">0</td></tr>
+                            <tr><td>Small Room</td><td class="result-item" id="smallroom-predelay">0</td><td class="result-item" id="smallroom-decaytime">0</td></tr>
+                            <tr><td>Tight Ambience</td><td class="result-item" id="tightambience-predelay">0</td><td class="result-item" id="tightambience-decaytime">0</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card tag-delay" style="grid-column: span 6;" aria-labelledby="delay-title">
+                <h2 id="delay-title"><span class="anim-text">延迟参数</span></h2>
+                <div class="body">
+                    <table id="delay-table">
+                        <thead>
+                            <tr>
+                                <th>音符值</th>
+                                <th>标准 (ms)</th>
+                                <th>附点 (ms)</th>
+                                <th>三连音 (ms)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="delay-values"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card tag-preset" style="grid-column: span 6;" aria-labelledby="preset-title">
+                <h2 id="preset-title"><span class="anim-text">压缩器预设</span></h2>
+                <div class="body">
+                    <table id="preset-compressor-table">
+                        <thead>
+                            <tr>
+                                <th>应用场景</th>
+                                <th>阈值（db）</th>
+                                <th>启动 (ms)</th>
+                                <th>释放 (ms)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="preset-compressor-values">
+                            <tr><td>vocals（人声）</td><td id="vocals-threshold">-18</td><td class="result-item" id="vocals-attack">0</td><td class="result-item" id="vocals-release">0</td></tr>
+                            <tr><td>drums（鼓组）</td><td id="drums-threshold">-15</td><td class="result-item" id="drums-attack">0</td><td class="result-item" id="drums-release">0</td></tr>
+                            <tr><td>bass（贝斯）</td><td id="bass-threshold">-12</td><td class="result-item" id="bass-attack">0</td><td class="result-item" id="bass-release">0</td></tr>
+                            <tr><td>piano（钢琴）</td><td id="piano-threshold">-14</td><td class="result-item" id="piano-attack">0</td><td class="result-item" id="piano-release">0</td></tr>
+                            <tr><td>guitar（吉他）</td><td id="guitar-threshold">-16</td><td class="result-item" id="guitar-attack">0</td><td class="result-item" id="guitar-release">0</td></tr>
+                            <tr><td>master（总线）</td><td id="master-threshold">-6</td><td class="result-item" id="master-attack">0</td><td class="result-item" id="master-release">0</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card tag-custom" style="grid-column: span 6;" aria-labelledby="custom-title">
+                <h2 id="custom-title"><span class="anim-text">自定义压缩参数</span></h2>
+                <div class="body">
+                    <table id="custom-compressor-table">
+                        <thead>
+                            <tr>
+                                <th>应用场景</th>
+                                <th>阈值（db）</th>
+                                <th>计算结果（ms）</th>
+                            </tr>
+                        </thead>
+                        <tbody id="custom-compressor-values">
+                            <tr>
+                                <td>vocals（人声）</td>
+                                <td><input type="number" class="cc-input" id="custom-vocals-threshold" value="-18" min="-60" max="0"></td>
+                                <td>启动: <span class="result-item" id="custom-vocals-attack">--</span>, 释放: <span class="result-item" id="custom-vocals-release">--</span></td>
+                            </tr>
+                            <tr>
+                                <td>drums（鼓组）</td>
+                                <td><input type="number" class="cc-input" id="custom-drums-threshold" value="-15" min="-60" max="0"></td>
+                                <td>启动: <span class="result-item" id="custom-drums-attack">--</span>, 释放: <span class="result-item" id="custom-drums-release">--</span></td>
+                            </tr>
+                            <tr>
+                                <td>bass（贝斯）</td>
+                                <td><input type="number" class="cc-input" id="custom-bass-threshold" value="-12" min="-60" max="0"></td>
+                                <td>启动: <span class="result-item" id="custom-bass-attack">--</span>, 释放: <span class="result-item" id="custom-bass-release">--</span></td>
+                            </tr>
+                            <tr>
+                                <td>piano（钢琴）</td>
+                                <td><input type="number" class="cc-input" id="custom-piano-threshold" value="-14" min="-60" max="0"></td>
+                                <td>启动: <span class="result-item" id="custom-piano-attack">--</span>, 释放: <span class="result-item" id="custom-piano-release">--</span></td>
+                            </tr>
+                            <tr>
+                                <td>guitar（吉他）</td>
+                                <td><input type="number" class="cc-input" id="custom-guitar-threshold" value="-16" min="-60" max="0"></td>
+                                <td>启动: <span class="result-item" id="custom-guitar-attack">--</span>, 释放: <span class="result-item" id="custom-guitar-release">--</span></td>
+                            </tr>
+                            <tr>
+                                <td>master（总线）</td>
+                                <td><input type="number" class="cc-input" id="custom-master-threshold" value="-6" min="-60" max="0"></td>
+                                <td>启动: <span class="result-item" id="custom-master-attack">--</span>, 释放: <span class="result-item" id="custom-master-release">--</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer" role="contentinfo">
+            <div id="footerType" class="type-caret" data-text="© 音频计算器 · 实时参数基于 BPM 计算"></div>
+            <div>
+                <a id="audioAppLink" href="https://audiobar.cn/" target="_blank" rel="noopener noreferrer" class="btn">音频应用</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- BPM测速弹窗 -->
+    <div id="bpmModalWrap" role="dialog" aria-modal="true" aria-labelledby="bpm-dialog-title" style="position: fixed; inset: 0; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); background: rgba(0,0,0,0.35); z-index: 9999;">
+        <div id="bpmModal" style="width: min(520px, 92vw); background: var(--bg-panel-strong); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; transform: translateY(12px); opacity: 0; transition: 240ms ease;">
+            <div id="bpm-dialog-title" style="padding: 16px 18px; border-bottom: 1px solid rgba(255,255,255,0.06);">BPM 计算工具</div>
+            <div style="padding: 18px; display: grid; gap: 12px;">
+                <button id="tapButton" class="btn primary" style="font-size: 18px; padding: 14px;" aria-label="点击或按空格键测速">点击或按空格键</button>
+                <div id="bpmDisplay" style="text-align: center; font-size: 36px; color: var(--primary);">0 BPM</div>
+                <div id="bpmDoneHint" class="hint" aria-live="polite" style="text-align:center; opacity:0; transition: opacity .25s ease;">手动测速已完成</div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="resetTapButton" class="btn" aria-label="重置测速">重置</button>
+                    <button id="closeBpmCalculator" class="btn accent" style="margin-left: auto;" aria-label="关闭测速窗口">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 复制提示 -->
+    <div id="copyToast" style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:rgba(10,15,26,0.85);color:#ffd86b;padding:8px 12px;border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,0.4);opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:10000;font-size:12px;">已复制</div>
+
+    <script>
+        // 星空（仅星点，流星移至顶层画布）
+        (function() {
+            const canvas = document.getElementById('bg-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height, stars = [];
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize); resize();
+
+            function createStars(n=220) {
+                stars = Array.from({length: n}, () => ({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    r: Math.random() * 1.2 + 0.3,
+                    a: Math.random() * 0.6 + 0.2,
+                    f: Math.random() * 0.02 + 0.005
+                }));
+            }
+            createStars();
+
+            let last = performance.now();
+            let paused = false;
+            document.addEventListener('visibilitychange', ()=>{ paused = document.hidden; });
+
+            function draw(now = performance.now()) {
+                const dt = Math.min(33, now - last); // cap delta
+                last = now;
+                if (paused) { requestAnimationFrame(draw); return; }
+
+                ctx.clearRect(0,0,width,height);
+
+                // stars
+                for (const s of stars) {
+                    s.a += s.f * (dt/16.7);
+                    const tw = (Math.sin(s.a) + 1) * 0.5; // 0~1
+                    ctx.beginPath();
+                    ctx.fillStyle = `rgba(220,230,255,${0.15 + tw * 0.45})`;
+                    ctx.arc(s.x, s.y, s.r * (0.7 + tw * 0.6), 0, Math.PI*2);
+                    ctx.fill();
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
+        // 顶层流星画布（在内容和星空之上）
+        ;(function(){
+            const canvas = document.getElementById('meteor-canvas');
+            const ctx = canvas.getContext('2d');
+            let w,h, meteors=[]; function resize(){ w=canvas.width=innerWidth; h=canvas.height=innerHeight; } addEventListener('resize', resize); resize();
+
+            let baseMeteorProb = 0.012; let lastMeteorAt = performance.now(); let nextMeteorDelay = 3500 + Math.random()*2500; const maxMeteors = 3;
+            function spawn(force=false){ if(!force && meteors.length>=maxMeteors) return; if(force || Math.random()<baseMeteorProb){ const angle=Math.PI*(Math.random()*0.15+0.15); meteors.push({ x:Math.random()*w*0.8+w*0.1, y:-20, vx:Math.cos(angle)*9, vy:Math.sin(angle)*9, life:0, max:180+Math.random()*120, hue:Math.floor(Math.random()*360)}); lastMeteorAt=performance.now(); nextMeteorDelay=3000+Math.random()*3000; }}
+
+            let last=performance.now(); function loop(now=performance.now()){ const dt=Math.min(33, now-last); last=now; ctx.clearRect(0,0,w,h); const tmod=(1+Math.sin(now/3000))*0.003; baseMeteorProb=0.012+tmod; spawn(); if(now-lastMeteorAt>nextMeteorDelay) spawn(true); meteors=meteors.filter(m=>m.life<m.max && m.x>-100 && m.y<h+100); for(const m of meteors){ m.life+=dt/16.7; m.x+=m.vx*(dt/16.7); m.y+=m.vy*(dt/16.7); const grad=ctx.createLinearGradient(m.x,m.y,m.x-m.vx*10,m.y-m.vy*10); grad.addColorStop(0,`hsla(${m.hue},95%,85%,0.95)`); grad.addColorStop(1,`hsla(${m.hue},90%,65%,0)`); ctx.strokeStyle=grad; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(m.x,m.y); ctx.lineTo(m.x-m.vx*10,m.y-m.vy*10); ctx.stroke(); } requestAnimationFrame(loop);} loop();
+        })();
+
+        // 顶层烟花效果：独立画布，颜色每次随机，作用在最顶层
+        (function(){
+            const canvas = document.getElementById('fx-canvas');
+            const ctx = canvas.getContext('2d');
+            let w, h; let particles = [];
+            function resize(){ w = canvas.width = innerWidth; h = canvas.height = innerHeight; }
+            addEventListener('resize', resize); resize();
+
+            function rand(min,max){ return Math.random()*(max-min)+min; }
+            function hslToRgb(h,s,l){
+                h/=360; s/=100; l/=100;
+                const hue2rgb=(p,q,t)=>{ if(t<0) t+=1; if(t>1) t-=1; if(t<1/6) return p+(q-p)*6*t; if(t<1/2) return q; if(t<2/3) return p+(q-p)*(2/3-t)*6; return p; };
+                const q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q;
+                const r=hue2rgb(p,q,h+1/3), g=hue2rgb(p,q,h), b=hue2rgb(p,q,h-1/3);
+                return [Math.round(r*255),Math.round(g*255),Math.round(b*255)];
+            }
+
+            function spawn(x,y){
+                const count = Math.floor(rand(70, 150));
+                const hueBase = Math.floor(rand(0,360)); // 每次点击随机主色
+                for(let i=0;i<count;i++){
+                    const angle = rand(0, Math.PI*2);
+                    const speed = rand(2,8)*(Math.random()<0.22?1.6:1);
+                    const hue = (hueBase + rand(-28,28))%360;
+                    const [r,g,b] = hslToRgb(hue, 90, 60);
+                    particles.push({
+                        x, y,
+                        vx: Math.cos(angle)*speed,
+                        vy: Math.sin(angle)*speed,
+                        drag: rand(0.96,0.985),
+                        life: 0,
+                        max: rand(700,1400),
+                        size: rand(1.2,2.6),
+                        r,g,b
+                    });
+                }
+            }
+
+            let last = performance.now();
+            function loop(now=performance.now()){
+                const dt = Math.min(33, now-last); last = now;
+                ctx.clearRect(0,0,w,h);
+                ctx.save(); ctx.globalCompositeOperation = 'lighter';
+                const g = 0.06; const t = dt/16.7;
+                for(let i=particles.length-1;i>=0;i--){
+                    const p = particles[i]; p.life += dt; if(p.life>p.max){ particles.splice(i,1); continue; }
+                    p.vx *= p.drag; p.vy = p.vy*p.drag + g*t; p.x += p.vx*t; p.y += p.vy*t;
+                    const alpha = Math.max(0, 1 - p.life/p.max);
+                    const size = Math.max(0.6, p.size*(0.7+alpha*0.6));
+                    ctx.strokeStyle = `rgba(${p.r},${p.g},${p.b},${alpha*0.9})`;
+                    ctx.lineWidth = Math.max(0.8, size*0.6);
+                    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx*1.8, p.y - p.vy*1.8); ctx.stroke();
+                    ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${alpha})`;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, size, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.restore();
+                requestAnimationFrame(loop);
+            }
+            loop();
+
+            // 在任何点击位置生成烟花（顶层显示，不影响原有点击逻辑）
+            document.addEventListener('click', (e)=>{ spawn(e.clientX, e.clientY); });
+            document.addEventListener('touchstart', (e)=>{ const t=e.touches[0]; if(!t) return; spawn(t.clientX, t.clientY); }, {passive:true});
+        })();
+
+        // 计算核心（迁移自现有实现，保留公式）
+        (function() {
+            let elements = {};
+
+            const configs = {
+                reverb: [
+                    // 使用与 audiobar3.html 相同的计算方式：
+                    // total = (60000 / bpm) * beatsFactor;  predelay = total / divisor;  decay = total - predelay
+                    // beatsFactor 采用原版的整拍：Hall=8、Large=4、Small=2、Tight=1；plate 类型按现有风格近似（2.4/3.9）
+                    { id: "hall",           beatsFactor: 8,   predelayDivisor: 64 },
+                    { id: "smallplate",     beatsFactor: 2.4, predelayDivisor: 128 },
+                    { id: "fatplate",       beatsFactor: 3.9, predelayDivisor: 96 },
+                    { id: "largeroom",      beatsFactor: 4,   predelayDivisor: 64 },
+                    { id: "smallroom",      beatsFactor: 2,   predelayDivisor: 64 },
+                    { id: "tightambience",  beatsFactor: 1,   predelayDivisor: 128 }
+                ],
+                delay: [
+                    { value: "1/2", multiplier: 2 },
+                    { value: "1/4", multiplier: 1 },
+                    { value: "1/8", multiplier: 0.5 },
+                    { value: "1/16", multiplier: 0.25 },
+                    { value: "1/32", multiplier: 0.125 },
+                    { value: "1/64", multiplier: 0.0625 }
+                ],
+                compressorPresets: [
+                    { id: "vocals", threshold: "-18", attackFactor: 0.0055, releaseFactor: 0.13 },
+                    { id: "drums", threshold: "-15", attackFactor: 0.002, releaseFactor: 0.07 },
+                    { id: "bass", threshold: "-12", attackFactor: 0.012, releaseFactor: 0.17 },
+                    { id: "piano", threshold: "-14", attackFactor: 0.008, releaseFactor: 0.195 },
+                    { id: "guitar", threshold: "-16", attackFactor: 0.00575, releaseFactor: 0.145 },
+                    { id: "master", threshold: "-6", attackFactor: 0.02375, releaseFactor: 0.2375 }
+                ],
+                customCompressor: [
+                    { id: "vocals", attackFactor: 0.006, releaseFactor: 0.1375 },
+                    { id: "drums", attackFactor: 0.00225, releaseFactor: 0.0775 },
+                    { id: "bass", attackFactor: 0.013, releaseFactor: 0.18 },
+                    { id: "piano", attackFactor: 0.00875, releaseFactor: 0.205 },
+                    { id: "guitar", attackFactor: 0.00625, releaseFactor: 0.155 },
+                    { id: "master", attackFactor: 0.02625, releaseFactor: 0.2625 }
+                ]
+            };
+
+            const rowGradients = [
+                'linear-gradient(90deg,#7aa2ff,#7ef0d2)',
+                'linear-gradient(90deg,#7ef0d2,#ffb86b)',
+                'linear-gradient(90deg,#ffb86b,#ff87b7)',
+                'linear-gradient(90deg,#ff87b7,#b478ff)',
+                'linear-gradient(90deg,#b478ff,#7aa2ff)',
+                'linear-gradient(90deg,#7aa2ff,#7ef0d2)'
+            ];
+            const getRowGradient = (idx) => rowGradients[idx % rowGradients.length];
+
+            function init() {
+                elements = {
+                    bpmInput: document.getElementById('bpm'),
+                    calculateButton: document.getElementById('calculateButton'),
+                    manualBpmButton: document.getElementById('manualBpmButton'),
+                    bpmError: null,
+                    openTap: document.getElementById('openTap'),
+                    reverbTable: document.getElementById('reverb-table'),
+                    delayTable: document.getElementById('delay-table'),
+                    presetCompressorTable: document.getElementById('preset-compressor-table'),
+                    customCompressorTable: document.getElementById('custom-compressor-table'),
+                    delayValues: document.getElementById('delay-values'),
+                    bpmModalWrap: document.getElementById('bpmModalWrap'),
+                    bpmModal: document.getElementById('bpmModal'),
+                    tapButton: document.getElementById('tapButton'),
+                    resetTapButton: document.getElementById('resetTapButton'),
+                    closeBpmCalculator: document.getElementById('closeBpmCalculator'),
+                    bpmDisplay: document.getElementById('bpmDisplay'),
+                    footerType: document.getElementById('footerType'),
+                    customCalculateButtons: document.querySelectorAll('.cc-calc')
+                };
+
+                // 初始化延迟表默认行
+                initializeDelayTable();
+                // 初始化为渐变文字（未输入BPM前也生效）
+                applyInitialReverbGradients();
+                applyInitialDelayGradients();
+                // 初始化阈值文案（不带 dB 后缀，表头已注明单位）
+                configs.compressorPresets.forEach(p => { const el = document.getElementById(`${p.id}-threshold`); if (el) el.textContent = p.threshold; });
+
+                bindEvents();
+                applyInitialPresetGradients();
+
+                // 初始计算：多次触发，规避某些环境下首次渲染时序差异
+                if (!elements.bpmInput.value) { elements.bpmInput.value = 120; }
+                calculateAll();
+                setTimeout(calculateAll, 50);
+                setTimeout(calculateAll, 300);
+
+                // 启动页脚打字效果
+                startFooterTyping();
+            }
+
+            function validateBpm(value) {
+                const bpm = parseInt(value, 10);
+                if (isNaN(bpm) || bpm <= 0) { return null; }
+                return bpm;
+            }
+
+            // 左下角命令行打字
+            function startFooterTyping(){
+                const el = elements.footerType; if (!el) return;
+                const full = el.getAttribute('data-text') || el.textContent || '';
+                const speed = 110; // 每字毫秒（再慢一些）
+                const pauseAfterDone = 5000; // 完成后停顿 5s 再循环
+                function run(){
+                    el.textContent = '';
+                    let i = 0;
+                    function step(){
+                        if (i <= full.length){
+                            el.textContent = full.slice(0, i);
+                            i++;
+                            setTimeout(step, speed);
+                        } else {
+                            setTimeout(run, pauseAfterDone);
+                        }
+                    }
+                    step();
+                }
+                run();
+            }
+
+            function animateCell(el) {
+                if (!el) return;
+                el.classList.remove('flow-highlight');
+                void el.offsetWidth; // reflow to restart
+                el.classList.add('flow-highlight');
+                setTimeout(() => el.classList.remove('flow-highlight'), 920);
+            }
+
+            function calculateReverb(bpm) {
+                const unit = 60000 / bpm; // 一拍(ms)
+                const rowGradients = [
+                    'linear-gradient(90deg,#7aa2ff,#7ef0d2)',
+                    'linear-gradient(90deg,#7ef0d2,#ffb86b)',
+                    'linear-gradient(90deg,#ffb86b,#ff87b7)',
+                    'linear-gradient(90deg,#ff87b7,#b478ff)',
+                    'linear-gradient(90deg,#b478ff,#7aa2ff)',
+                    'linear-gradient(90deg,#7aa2ff,#7ef0d2)'
+                ];
+                const reverbRows = elements.reverbTable ? elements.reverbTable.querySelectorAll('tbody tr') : [];
+                configs.reverb.forEach((cfg, idx) => {
+                    const beats = cfg.beatsFactor !== undefined ? cfg.beatsFactor : (cfg.multiplier * 4);
+                    const total = unit * beats;                 // 总混响时长（等效拍数）
+                    const preDelay = total / cfg.predelayDivisor; // 预延迟
+                    const decayTime = total - preDelay;           // 衰减时间（总 - 预延迟）
+                    const preEl = document.getElementById(`${cfg.id}-predelay`);
+                    const decEl = document.getElementById(`${cfg.id}-decaytime`);
+                    const tone = (idx % 6) + 1;
+                    if (preEl) { preEl.textContent = preDelay.toFixed(2); preEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); preEl.classList.add(`num-tone-${tone}`); }
+                    if (decEl) { decEl.textContent = decayTime.toFixed(2); decEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); decEl.classList.add(`num-tone-${tone}`); }
+                    // 第一列类型名称也上色（仅文字）
+                    const row = reverbRows[idx];
+                    // 保持名称可见（去除渐变包裹，直接保留文本）
+                    if (row && row.children && row.children[0]) {
+                        const nameCell = row.children[0];
+                        const lt = (idx % 6) + 1;
+                        nameCell.classList.remove('label-tone-1','label-tone-2','label-tone-3','label-tone-4','label-tone-5','label-tone-6');
+                        nameCell.classList.add(`label-tone-${lt}`);
+                    }
+                    setTimeout(() => { animateCell(preEl); setTimeout(() => animateCell(decEl), 80); }, idx*100);
+                });
+                attachCopyHints(); attachCopyListeners();
+            }
+
+            function calculateDelay(bpm) {
+                const quarterNoteMs = 60000 / bpm;
+                let html = '';
+                const rowGradients = [
+                    'linear-gradient(90deg,#7aa2ff,#7ef0d2)',
+                    'linear-gradient(90deg,#7ef0d2,#ffb86b)',
+                    'linear-gradient(90deg,#ffb86b,#ff87b7)',
+                    'linear-gradient(90deg,#ff87b7,#b478ff)',
+                    'linear-gradient(90deg,#b478ff,#7aa2ff)',
+                    'linear-gradient(90deg,#7aa2ff,#7ef0d2)'
+                ];
+                configs.delay.forEach((cfg, idx) => {
+                    const base = quarterNoteMs * cfg.multiplier;
+                    const standard = base.toFixed(2);
+                    const dotted = (base * 1.5).toFixed(2);
+                    const triplet = (base * 0.6667).toFixed(2);
+                    const tone = (idx % 6) + 1;
+                    html += `<tr>
+                        <td class=\"label-tone-${tone}\">${cfg.value}</td>
+                        <td class=\"result-item num-tone-${tone}\">${standard}</td>
+                        <td class=\"result-item num-tone-${tone}\">${dotted}</td>
+                        <td class=\"result-item num-tone-${tone}\">${triplet}</td>
+                    </tr>`;
+                });
+                elements.delayValues.innerHTML = html;
+                setTimeout(() => elements.delayTable.querySelectorAll('.result-item').forEach((el,i)=> setTimeout(()=>animateCell(el), i*60)), 40);
+                attachCopyHints(); attachCopyListeners();
+            }
+
+            function calculateCompressorPresets(bpm) {
+                const quarter = 60000 / bpm;
+                const rows = ["vocals","drums","bass","piano","guitar","master"];
+                rows.forEach((id, idx) => {
+                    const pre = configs.compressorPresets.find(p=>p.id===id);
+                    if (!pre) return;
+                    const attack = Math.max(0.5, (quarter * pre.attackFactor).toFixed(2));
+                    const release = Math.min(2000, (quarter * 4 * pre.releaseFactor).toFixed(2));
+                    const aEl = document.getElementById(`${id}-attack`);
+                    const rEl = document.getElementById(`${id}-release`);
+                    const tone = (idx % 6) + 1;
+                    if (aEl) { aEl.textContent = attack; aEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); aEl.classList.add(`num-tone-${tone}`); }
+                    if (rEl) { rEl.textContent = release; rEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); rEl.classList.add(`num-tone-${tone}`); }
+                    setTimeout(() => { animateCell(aEl); setTimeout(()=>animateCell(rEl), 80); }, idx*100);
+                });
+                attachCopyHints(); attachCopyListeners();
+            }
+
+            function calculateCustomCompressor(bpm, type, threshold) {
+                const quarter = 60000 / bpm; const whole = quarter * 4;
+                const cfg = configs.customCompressor.find(c=>c.id===type); if (!cfg) return null;
+                const tf = Math.max(0.1, Math.min(1, (threshold + 60) / 60));
+                const aF = cfg.attackFactor * (1 - (tf - 0.5) * 0.4);
+                const rF = cfg.releaseFactor * (1 + (tf - 0.5) * 0.4);
+                const attack = Math.max(0.5, Math.min(100, (quarter * aF).toFixed(2)));
+                const release = Math.max(10, Math.min(2000, (whole * rF).toFixed(2)));
+                return { attack, release };
+            }
+
+            // 计算所有自定义压缩（用于一键计算和兜底）
+            function calculateCustomAll(bpm) {
+                ["vocals","drums","bass","piano","guitar","master"].forEach((type, idx)=>{
+                    const input = document.getElementById(`custom-${type}-threshold`);
+                    if (!input) return;
+                    const th = parseInt(input.value, 10);
+                    if (isNaN(th) || th < -60 || th > 0) return;
+                    const res = calculateCustomCompressor(bpm, type, th);
+                    if (!res) return;
+                    const aEl = document.getElementById(`custom-${type}-attack`);
+                    const rEl = document.getElementById(`custom-${type}-release`);
+                    const tone = (idx % 6) + 1;
+                    if (aEl) { aEl.textContent = res.attack; aEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); aEl.classList.add(`num-tone-${tone}`); }
+                    if (rEl) { rEl.textContent = res.release; rEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); rEl.classList.add(`num-tone-${tone}`); }
+                    setTimeout(()=>{ animateCell(aEl); setTimeout(()=>animateCell(rEl), 80); }, idx*60);
+                });
+                attachCopyHints(); attachCopyListeners();
+            }
+
+            function clampThreshold(v){ if (v > 0) return 0; if (v < -60) return -60; return v; }
+            function computeOne(type){
+                const bpm = validateBpm(elements.bpmInput.value); if (!bpm) return;
+                const input = document.getElementById(`custom-${type}-threshold`); if (!input) return;
+                let th = parseInt(input.value,10); if (isNaN(th)) return;
+                th = clampThreshold(th); if (th != parseInt(input.value,10)) input.value = th;
+                const res = calculateCustomCompressor(bpm, type, th); if (!res) return;
+                const aEl = document.getElementById(`custom-${type}-attack`);
+                const rEl = document.getElementById(`custom-${type}-release`);
+                if (aEl) aEl.textContent = res.attack; if (rEl) rEl.textContent = res.release;
+                animateCell(aEl); setTimeout(()=>animateCell(rEl), 80);
+            }
+
+            function calculateAll() {
+                const bpm = validateBpm(elements.bpmInput.value);
+                if (!bpm) return;
+                calculateReverb(bpm);
+                calculateDelay(bpm);
+                calculateCompressorPresets(bpm);
+                calculateCustomAll(bpm);
+            }
+
+            function initializeDelayTable() {
+                let html='';
+                configs.delay.forEach((cfg, idx) => {
+                    const grad = rowGradients[idx % rowGradients.length];
+                    html += `<tr>
+                        <td><span class=\"grad-text\" style=\"background:${grad}\">${cfg.value}</span></td>
+                        <td class=\"result-item\"><span class=\"grad-text\" style=\"background:${grad}\">0</span></td>
+                        <td class=\"result-item\"><span class=\"grad-text\" style=\"background:${grad}\">0</span></td>
+                        <td class=\"result-item\"><span class=\"grad-text\" style=\"background:${grad}\">0</span></td>
+                    </tr>`;
+                });
+                elements.delayValues.innerHTML = html;
+            }
+
+            function applyInitialReverbGradients(){
+                const rows = elements.reverbTable ? elements.reverbTable.querySelectorAll('tbody tr') : [];
+                rows.forEach((tr)=>{
+                    // 直接保留文本，避免发布态样式导致不可见
+                    const nameCell = tr.children[0];
+                    const preCell = tr.children[1];
+                    const decCell = tr.children[2];
+                    if (nameCell) nameCell.textContent = nameCell.textContent;
+                    if (preCell) preCell.textContent = preCell.textContent;
+                    if (decCell) decCell.textContent = decCell.textContent;
+                });
+            }
+
+            function applyInitialDelayGradients(){
+                // 已在 initializeDelayTable 里注入
+            }
+
+            // 手动测速
+            let tapTimes = []; let isTapActive = false; let bpmApplyTimer = null; let lastComputedBpm = 0; let bpmHintTimer = null;
+            function openBpm() { elements.bpmModalWrap.style.display = 'flex'; setTimeout(()=>{ elements.bpmModal.style.transform='translateY(0)'; elements.bpmModal.style.opacity='1'; }, 10); isTapActive=true; }
+            function closeBpm() { elements.bpmModal.style.transform='translateY(12px)'; elements.bpmModal.style.opacity='0'; setTimeout(()=>{ elements.bpmModalWrap.style.display='none'; }, 220); isTapActive=false; }
+            function resetTap() { tapTimes = []; lastComputedBpm = 0; if (bpmApplyTimer) { clearTimeout(bpmApplyTimer); bpmApplyTimer = null; } if (bpmHintTimer) { clearTimeout(bpmHintTimer); bpmHintTimer = null; } const hint=document.getElementById('bpmDoneHint'); if(hint){ hint.style.opacity='0'; } elements.bpmDisplay.textContent = '0 BPM'; }
+            function handleTap() {
+                const now = Date.now(); tapTimes.push(now); if (tapTimes.length>21) tapTimes.shift();
+                updateBpmDisplay();
+            }
+            function updateBpmDisplay() {
+                if (tapTimes.length < 2) { elements.bpmDisplay.textContent = '0 BPM'; return; }
+                // 仅使用最近20个间隔
+                const startIdx = Math.max(0, tapTimes.length - 21);
+                const recent = tapTimes.slice(startIdx);
+                const intervals = []; for (let i=1;i<recent.length;i++) intervals.push(recent[i]-recent[i-1]);
+                // 去掉首尾异常值
+                const sorted = [...intervals].sort((a,b)=>a-b); const filtered = sorted.length>2 ? sorted.slice(1,-1) : intervals;
+                const avg = filtered.reduce((s,v)=>s+v,0)/ filtered.length;
+                const bpm = Math.round(60000/avg);
+                lastComputedBpm = bpm;
+                elements.bpmDisplay.textContent = bpm + ' BPM';
+                // 3秒无操作后再写入输入框并计算，避免实时抖动
+                if (bpmApplyTimer) clearTimeout(bpmApplyTimer);
+                const hintEl = document.getElementById('bpmDoneHint');
+                bpmApplyTimer = setTimeout(()=>{
+                    if (!lastComputedBpm) return;
+                    elements.bpmInput.value = lastComputedBpm;
+                    calculateAll();
+                    if (hintEl){
+                        hintEl.textContent = '手动测速已完成';
+                        hintEl.style.opacity = '1';
+                        if (bpmHintTimer) clearTimeout(bpmHintTimer);
+                        bpmHintTimer = setTimeout(()=>{ hintEl.style.opacity='0'; }, 1800);
+                    }
+                }, 3000);
+            }
+
+            function bindEvents() {
+                elements.calculateButton.addEventListener('click', calculateAll);
+                elements.bpmInput.addEventListener('input', calculateAll);
+                elements.manualBpmButton.addEventListener('click', openBpm);
+                const openTapBtn = document.getElementById('openTap');
+                if (openTapBtn) openTapBtn.addEventListener('click', openBpm);
+                elements.closeBpmCalculator.addEventListener('click', closeBpm);
+                elements.resetTapButton.addEventListener('click', resetTap);
+                elements.tapButton.addEventListener('click', handleTap);
+                document.addEventListener('keydown', (e)=>{
+                    if (e.code==='Space' && isTapActive) { e.preventDefault(); handleTap(); }
+                    if (e.code==='Escape' && isTapActive) { closeBpm(); }
+                    if (e.code==='Enter') { calculateAll(); }
+                });
+
+                // 事件委托，避免偶发绑定失败或后续动态更新导致的失效
+                // 事件委托（表格级别）
+                // 计算按钮已移除，保留实时计算事件（见下面的 .cc-input 监听）
+
+                // 阈值输入变更时实时计算
+                document.querySelectorAll('.cc-input').forEach(inp=>{
+                    inp.addEventListener('input', () => {
+                        const type = inp.id.replace('custom-','').replace('-threshold','');
+                        computeOne(type);
+                    });
+                    inp.addEventListener('change', () => {
+                        const type = inp.id.replace('custom-','').replace('-threshold','');
+                        computeOne(type);
+                    });
+                    inp.addEventListener('blur', () => {
+                        let v = parseInt(inp.value,10); if (isNaN(v)) return;
+                        v = clampThreshold(v); inp.value = v;
+                        const type = inp.id.replace('custom-','').replace('-threshold','');
+                        computeOne(type);
+                    });
+                });
+
+                // 全局点击复制（对 .result-item 或其内部的 .grad-text 生效）
+                document.addEventListener('click', async (e)=>{
+                    const baseTarget = (e.target && e.target.nodeType===3) ? e.target.parentElement : e.target;
+                    let cell = baseTarget && baseTarget.closest && baseTarget.closest('.result-item');
+                    if (!cell && baseTarget && baseTarget.classList && baseTarget.classList.contains('grad-text')) {
+                        // 渐变文字在内部，再找外层承载节点
+                        const parent = baseTarget.parentElement;
+                        if (parent && (parent.classList.contains('result-item') || parent.closest('.result-item'))) {
+                            cell = parent.classList.contains('result-item') ? parent : parent.closest('.result-item');
+                        }
+                    }
+                    if (cell) {
+                        const text = (cell.textContent || '').trim();
+                        if (!text) return;
+                        copyText(text, { x: e.clientX, y: e.clientY });
+                        return;
+                    }
+                    // 阈值列等纯 grad-text 的情况：直接复制该文字，并跟随鼠标
+                    const gradEl = baseTarget && baseTarget.closest && baseTarget.closest('.grad-text');
+                    if (gradEl) {
+                        const t = (gradEl.textContent || '').trim();
+                        if (t && t !== '--') copyText(t, { x: e.clientX, y: e.clientY });
+                    }
+                });
+
+                // 兜底：捕获阶段的全局委托，精确选择同一单元格中的最近数值
+                if (!window._copyCaptureInstalled) {
+                    window._copyCaptureInstalled = true;
+                    document.addEventListener('click', (e)=>{
+                        // 已经被上面的处理捕获则跳过
+                        if (e._copyHandled) return;
+                        const baseTarget = (e.target && e.target.nodeType===3) ? e.target.parentElement : e.target;
+                        let item = baseTarget && baseTarget.closest && baseTarget.closest('.result-item');
+                        if (!item) {
+                            // 在包含多个结果的td里，选择离点击位置最近的.result-item
+                            const td = baseTarget && baseTarget.closest && baseTarget.closest('td');
+                            if (td) {
+                                const candidates = Array.from(td.querySelectorAll('.result-item'));
+                                if (candidates.length) {
+                                    const { clientX: x } = e;
+                                    let best = candidates[0];
+                                    let bestDist = Infinity;
+                                    candidates.forEach(c=>{
+                                        const rect = c.getBoundingClientRect();
+                                        const cx = rect.left + rect.width/2;
+                                        const d = Math.abs(cx - x);
+                                        if (d < bestDist) { bestDist = d; best = c; }
+                                    });
+                                    item = best;
+                                }
+                            }
+                        }
+                        if (!item) return;
+                        const text = (item.textContent || '').trim();
+                        if (!text || text === '--') return;
+                        copyText(text, { x: e.clientX, y: e.clientY });
+                        e._copyHandled = true;
+                    }, true); // 捕获阶段
+                }
+            }
+
+            function showCopyToast(msg, pos){
+                const toast = document.getElementById('copyToast');
+                if (!toast) return;
+                toast.textContent = msg;
+                if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
+                    const offsetX = 12, offsetY = 16;
+                    toast.style.display = 'block';
+                    toast.style.bottom = '';
+                    const rect = toast.getBoundingClientRect();
+                    let left = Math.min(Math.max(pos.x + offsetX, 8), window.innerWidth - rect.width - 8);
+                    let top  = Math.min(Math.max(pos.y - offsetY - rect.height, 8), window.innerHeight - rect.height - 8);
+                    toast.style.left = left + 'px';
+                    toast.style.top = top + 'px';
+                    toast.style.transform = 'translate(0, -6px)';
+                } else {
+                    toast.style.left = '50%';
+                    toast.style.top = '';
+                    toast.style.bottom = '26px';
+                    toast.style.transform = 'translateX(-50%) translateY(-4px)';
+                }
+                toast.style.opacity = '1';
+                clearTimeout(showCopyToast._t);
+                showCopyToast._t = setTimeout(()=>{
+                    toast.style.opacity = '0';
+                    if (!pos) toast.style.transform = 'translateX(-50%)';
+                }, 1200);
+            }
+
+            function attachCopyHints(){
+                document.querySelectorAll('.result-item').forEach(el=>{
+                    el.setAttribute('title','点击复制');
+                    el.setAttribute('aria-label','点击复制');
+                    el.style.cursor = 'pointer';
+                    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0');
+                });
+                // 阈值列（grad-text）也设置可点击提示
+                // 预设阈值列（第2列）也允许点击复制
+                document.querySelectorAll('#preset-compressor-table tbody td:nth-child(2)').forEach(td=>{
+                    td.style.cursor = 'pointer';
+                    td.title = '点击复制';
+                });
+            }
+
+            function attachCopyListeners(){
+                document.querySelectorAll('.result-item').forEach(el=>{
+                    if (!el._copyBound) {
+                        el._copyBound = true;
+                        el.addEventListener('click', ()=>{ const t=(el.textContent||'').trim(); if(t) copyText(t); });
+                        el.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter'||ev.key===' '){ev.preventDefault(); const t=(el.textContent||'').trim(); if(t) copyText(t);} });
+                    }
+                    // 同时给父级td绑定，防止点击到“启动: ”等普通文本时不触发
+                    const parent = el.parentElement;
+                    if (parent && !parent._copyBound) {
+                        parent._copyBound = true;
+                        parent.style.cursor = 'pointer';
+                        parent.title = '点击复制';
+                        // 事件代理：点击到哪个 .result-item 就复制哪个
+                        parent.addEventListener('click', (ev)=>{
+                            const tnode = (ev.target && ev.target.nodeType===3) ? ev.target.parentElement : ev.target;
+                            let target = tnode && tnode.closest && tnode.closest('.grad-text, .result-item');
+                            // 阈值第2列兜底
+                            if (!target) {
+                                const td = tnode && tnode.closest && tnode.closest('td');
+                                const tr = td && td.parentElement;
+                                const table = tr && tr.closest && tr.closest('#preset-compressor-table');
+                                if (table && td && td.cellIndex === 1) target = td;
+                            }
+                            if (!target || !parent.contains(target)) return;
+                            const t = (target.textContent || '').trim();
+                            if (t && t !== '--') copyText(t);
+                        });
+                    }
+                });
+            }
+
+            async function copyText(text, pos){
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(text);
+                    } else {
+                        const ta = document.createElement('textarea');
+                        ta.value = text; document.body.appendChild(ta); ta.select();
+                        document.execCommand('copy'); document.body.removeChild(ta);
+                    }
+                    showCopyToast('已复制: ' + text, pos);
+                } catch (e) {
+                    showCopyToast('复制失败', pos);
+                }
+            }
+
+            function applyInitialPresetGradients(){
+                const table = elements.presetCompressorTable;
+                if (!table) return;
+                const bodyRows = table.querySelectorAll('tbody tr');
+                bodyRows.forEach((tr, idx)=>{
+                    const tone = (idx % 6) + 1;
+                    const nameCell = tr.children[0];
+                    const thresholdCell = tr.children[1];
+                    const attackCell = tr.children[2];
+                    const releaseCell = tr.children[3];
+                    if (nameCell) {
+                        nameCell.textContent = nameCell.textContent;
+                        nameCell.classList.remove('label-tone-1','label-tone-2','label-tone-3','label-tone-4','label-tone-5','label-tone-6');
+                        nameCell.classList.add(`label-tone-${tone}`);
+                    }
+                    if (thresholdCell) {
+                        thresholdCell.textContent = thresholdCell.textContent;
+                        thresholdCell.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6');
+                        thresholdCell.classList.add(`num-tone-${tone}`);
+                    }
+                    if (attackCell) {
+                        attackCell.textContent = attackCell.textContent;
+                        attackCell.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6');
+                        attackCell.classList.add(`num-tone-${tone}`);
+                    }
+                    if (releaseCell) {
+                        releaseCell.textContent = releaseCell.textContent;
+                        releaseCell.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6');
+                        releaseCell.classList.add(`num-tone-${tone}`);
+                    }
+                });
+                // 自定义表名称列和初始结果也上色
+                const customTable = elements.customCompressorTable;
+                if (customTable) {
+                    const rows = customTable.querySelectorAll('tbody tr');
+                    rows.forEach((tr, idx)=>{
+                        const tone = (idx % 6) + 1;
+                        const nameCell = tr.children[0];
+                        const resultCell = tr.children[2];
+                        if (nameCell) {
+                            nameCell.textContent = nameCell.textContent;
+                            nameCell.classList.remove('label-tone-1','label-tone-2','label-tone-3','label-tone-4','label-tone-5','label-tone-6');
+                            nameCell.classList.add(`label-tone-${tone}`);
+                        }
+                        if (resultCell) {
+                            const spans = resultCell.querySelectorAll('span.result-item');
+                            spans.forEach(s=>{
+                                s.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6');
+                                s.classList.add(`num-tone-${tone}`);
+                            });
+                        }
+                    });
+                }
+            }
+
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+        })();
+    </script>
+</body>
+</html>
+
+
