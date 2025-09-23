@@ -17,8 +17,8 @@ jobs:
             args: "--target x86_64-pc-windows-msvc"
             artifactName: "AudioCalc-Windows"
           - platform: macos-latest
-            args: "--target x86_64-apple-darwin"
-            artifactName: "AudioCalc-macOS"
+            args: "--target aarch64-apple-darwin"
+            artifactName: "AudioCalc-macOS-arm64"
           - platform: ubuntu-latest
             args: "--target x86_64-unknown-linux-gnu"
             artifactName: "AudioCalc-Linux"
@@ -43,7 +43,9 @@ jobs:
         if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+          # webkit2gtk: try 4.1 first (Ubuntu 24.04+), fallback to 4.0 (22.04)
+          sudo apt-get install -y libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf || true
+          (sudo apt-get install -y libwebkit2gtk-4.1-dev || sudo apt-get install -y libwebkit2gtk-4.0-dev)
 
       - name: Install frontend dependencies
         run: |
