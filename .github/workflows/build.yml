@@ -42,10 +42,11 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Add Rust macOS targets
-        if: matrix.platform == 'macos-latest'
+      - name: Add Rust targets
         run: |
+          rustup target add x86_64-pc-windows-msvc
           rustup target add aarch64-apple-darwin x86_64-apple-darwin
+          rustup target add x86_64-unknown-linux-gnu
 
       - name: Install Rosetta (for macOS x86_64 builds on Apple Silicon)
         if: matrix.platform == 'macos-latest' && contains(matrix.args, 'x86_64-apple-darwin')
@@ -64,6 +65,12 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run tauri -- --version
+
+      - name: Setup Windows build environment
+        if: matrix.platform == 'windows-latest'
+        uses: microsoft/setup-msbuild@v1.3
+        with:
+          msbuild-architecture: x64
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
