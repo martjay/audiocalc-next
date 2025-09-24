@@ -1105,17 +1105,13 @@
             }
 
             function calculateCustomCompressor(bpm, type, threshold) {
-                // 恢复为修改前的阈值温和影响模型（±20%）
+                // 与“预设”完全一致：阈值仅显示，不影响计算
                 const quarter = 60000 / bpm; 
                 const whole = quarter * 4;
                 const cfg = configs.customCompressor.find(c=>c.id===type); 
                 if (!cfg) return null;
-                // 将阈值映射到 0~1，并形成温和偏移
-                const tf = Math.max(0.1, Math.min(1, (threshold + 60) / 60));
-                const aF = cfg.attackFactor * (1 - (tf - 0.5) * 0.4);
-                const rF = cfg.releaseFactor * (1 + (tf - 0.5) * 0.4);
-                const attack = Math.max(0.5, Math.min(100, (quarter * aF).toFixed(2)));
-                const release = Math.max(10, Math.min(2000, (whole * rF).toFixed(2)));
+                const attack = Math.max(0.5, Math.min(100, (quarter * cfg.attackFactor).toFixed(2)));
+                const release = Math.max(10, Math.min(2000, (whole * cfg.releaseFactor).toFixed(2)));
                 const ratio = cfg.ratio;
                 return { attack, release, ratio };
             }
