@@ -88,7 +88,6 @@ jobs:
         with:
           args: ${{ matrix.args }}
           includeDebug: false
-          targets: all
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
