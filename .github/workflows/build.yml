@@ -87,6 +87,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Windows 下强制使用 NSIS，避免 WiX MSI 引起的失败
           TAURI_BUNDLE_TARGETS: ${{ matrix.platform == 'windows-latest' && 'nsis' || '' }}
+          RUST_BACKTRACE: 1
+          TAURI_LOG: trace
         with:
           args: ${{ matrix.args }}
           includeDebug: false
