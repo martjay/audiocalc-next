@@ -72,6 +72,15 @@ jobs:
         with:
           msbuild-architecture: x64
 
+      - name: Install Windows dependencies
+        if: matrix.platform == 'windows-latest'
+        run: |
+          # 确保 Rust 目标已安装
+          rustup target add x86_64-pc-windows-msvc
+          # 检查 Rust 工具链
+          rustc --version
+          cargo --version
+
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
@@ -79,6 +88,7 @@ jobs:
         with:
           args: ${{ matrix.args }}
           includeDebug: false
+          targets: all
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
