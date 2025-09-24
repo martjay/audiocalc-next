@@ -1078,20 +1078,16 @@
             }
 
             function calculateCompressorPresets(bpm) {
+                // 恢复为修改前的更稳健算法：预设不受阈值影响，仅按 BPM 映射
                 const quarter = 60000 / bpm;
                 const whole = quarter * 4;
                 const rows = ["vocals","drums","bass","piano","guitar","master"];
                 rows.forEach((id, idx) => {
                     const pre = configs.compressorPresets.find(p=>p.id===id);
                     if (!pre) return;
-                    
-                    // 阈值影响因子（更简单的线性关系）
-                    const threshold = parseInt(pre.threshold);
-                    const thresholdFactor = Math.max(0.5, Math.min(1.5, (threshold + 30) / 30));
-                    
-                    // 统一计算方式
-                    const attack = Math.max(0.5, Math.min(100, (quarter * pre.attackFactor * thresholdFactor).toFixed(2)));
-                    const release = Math.max(10, Math.min(2000, (whole * pre.releaseFactor * thresholdFactor).toFixed(2)));
+                    // 预设：attack 与 release 仅依赖 BPM 与类型系数
+                    const attack = Math.max(0.5, Math.min(100, (quarter * pre.attackFactor).toFixed(2)));
+                    const release = Math.max(10, Math.min(2000, (whole * pre.releaseFactor).toFixed(2)));
                     const ratio = pre.ratio;
                     
                     const aEl = document.getElementById(`${id}-attack`);
@@ -1109,19 +1105,18 @@
             }
 
             function calculateCustomCompressor(bpm, type, threshold) {
+                // 恢复为修改前的阈值温和影响模型（±20%）
                 const quarter = 60000 / bpm; 
                 const whole = quarter * 4;
                 const cfg = configs.customCompressor.find(c=>c.id===type); 
                 if (!cfg) return null;
-                
-                // 阈值影响因子（更简单的线性关系）
-                const thresholdFactor = Math.max(0.5, Math.min(1.5, (threshold + 30) / 30));
-                
-                // 统一计算方式
-                const attack = Math.max(0.5, Math.min(100, (quarter * cfg.attackFactor * thresholdFactor).toFixed(2)));
-                const release = Math.max(10, Math.min(2000, (whole * cfg.releaseFactor * thresholdFactor).toFixed(2)));
+                // 将阈值映射到 0~1，并形成温和偏移
+                const tf = Math.max(0.1, Math.min(1, (threshold + 60) / 60));
+                const aF = cfg.attackFactor * (1 - (tf - 0.5) * 0.4);
+                const rF = cfg.releaseFactor * (1 + (tf - 0.5) * 0.4);
+                const attack = Math.max(0.5, Math.min(100, (quarter * aF).toFixed(2)));
+                const release = Math.max(10, Math.min(2000, (whole * rF).toFixed(2)));
                 const ratio = cfg.ratio;
-                
                 return { attack, release, ratio };
             }
 
