@@ -664,15 +664,16 @@
                                 <th>阈值（db）</th>
                                 <th>启动 (ms)</th>
                                 <th>释放 (ms)</th>
+                                <th>压缩比</th>
                             </tr>
                         </thead>
                         <tbody id="preset-compressor-values">
-                            <tr><td>vocals（人声）</td><td id="vocals-threshold">-18</td><td class="result-item" id="vocals-attack">0</td><td class="result-item" id="vocals-release">0</td></tr>
-                            <tr><td>drums（鼓组）</td><td id="drums-threshold">-15</td><td class="result-item" id="drums-attack">0</td><td class="result-item" id="drums-release">0</td></tr>
-                            <tr><td>bass（贝斯）</td><td id="bass-threshold">-12</td><td class="result-item" id="bass-attack">0</td><td class="result-item" id="bass-release">0</td></tr>
-                            <tr><td>piano（钢琴）</td><td id="piano-threshold">-14</td><td class="result-item" id="piano-attack">0</td><td class="result-item" id="piano-release">0</td></tr>
-                            <tr><td>guitar（吉他）</td><td id="guitar-threshold">-16</td><td class="result-item" id="guitar-attack">0</td><td class="result-item" id="guitar-release">0</td></tr>
-                            <tr><td>master（总线）</td><td id="master-threshold">-6</td><td class="result-item" id="master-attack">0</td><td class="result-item" id="master-release">0</td></tr>
+                            <tr><td>Vocals（人声）</td><td id="vocals-threshold">-18</td><td class="result-item" id="vocals-attack">0</td><td class="result-item" id="vocals-release">0</td><td class="result-item" id="vocals-ratio">0</td></tr>
+                            <tr><td>Drums（鼓组）</td><td id="drums-threshold">-15</td><td class="result-item" id="drums-attack">0</td><td class="result-item" id="drums-release">0</td><td class="result-item" id="drums-ratio">0</td></tr>
+                            <tr><td>Bass（贝斯）</td><td id="bass-threshold">-12</td><td class="result-item" id="bass-attack">0</td><td class="result-item" id="bass-release">0</td><td class="result-item" id="bass-ratio">0</td></tr>
+                            <tr><td>Piano（钢琴）</td><td id="piano-threshold">-14</td><td class="result-item" id="piano-attack">0</td><td class="result-item" id="piano-release">0</td><td class="result-item" id="piano-ratio">0</td></tr>
+                            <tr><td>Guitar（吉他）</td><td id="guitar-threshold">-16</td><td class="result-item" id="guitar-attack">0</td><td class="result-item" id="guitar-release">0</td><td class="result-item" id="guitar-ratio">0</td></tr>
+                            <tr><td>Master（总线）</td><td id="master-threshold">-6</td><td class="result-item" id="master-attack">0</td><td class="result-item" id="master-release">0</td><td class="result-item" id="master-ratio">0</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -691,34 +692,34 @@
                         </thead>
                         <tbody id="custom-compressor-values">
                             <tr>
-                                <td>vocals（人声）</td>
+                                <td>Vocals（人声）</td>
                                 <td><input type="number" class="cc-input" id="custom-vocals-threshold" value="-18" min="-60" max="0"></td>
-                                <td>启动: <span class="result-item" id="custom-vocals-attack">--</span>, 释放: <span class="result-item" id="custom-vocals-release">--</span></td>
+                                <td>启动: <span class="result-item" id="custom-vocals-attack">--</span>, 释放: <span class="result-item" id="custom-vocals-release">--</span>, 压缩比: <span class="result-item" id="custom-vocals-ratio">--</span></td>
                             </tr>
                             <tr>
-                                <td>drums（鼓组）</td>
+                                <td>Drums（鼓组）</td>
                                 <td><input type="number" class="cc-input" id="custom-drums-threshold" value="-15" min="-60" max="0"></td>
-                                <td>启动: <span class="result-item" id="custom-drums-attack">--</span>, 释放: <span class="result-item" id="custom-drums-release">--</span></td>
+                                <td>启动: <span class="result-item" id="custom-drums-attack">--</span>, 释放: <span class="result-item" id="custom-drums-release">--</span>, 压缩比: <span class="result-item" id="custom-drums-ratio">--</span></td>
                             </tr>
                             <tr>
-                                <td>bass（贝斯）</td>
+                                <td>Bass（贝斯）</td>
                                 <td><input type="number" class="cc-input" id="custom-bass-threshold" value="-12" min="-60" max="0"></td>
-                                <td>启动: <span class="result-item" id="custom-bass-attack">--</span>, 释放: <span class="result-item" id="custom-bass-release">--</span></td>
+                                <td>启动: <span class="result-item" id="custom-bass-attack">--</span>, 释放: <span class="result-item" id="custom-bass-release">--</span>, 压缩比: <span class="result-item" id="custom-bass-ratio">--</span></td>
                             </tr>
                             <tr>
-                                <td>piano（钢琴）</td>
+                                <td>Piano（钢琴）</td>
                                 <td><input type="number" class="cc-input" id="custom-piano-threshold" value="-14" min="-60" max="0"></td>
-                                <td>启动: <span class="result-item" id="custom-piano-attack">--</span>, 释放: <span class="result-item" id="custom-piano-release">--</span></td>
+                                <td>启动: <span class="result-item" id="custom-piano-attack">--</span>, 释放: <span class="result-item" id="custom-piano-release">--</span>, 压缩比: <span class="result-item" id="custom-piano-ratio">--</span></td>
                             </tr>
                             <tr>
-                                <td>guitar（吉他）</td>
+                                <td>Guitar（吉他）</td>
                                 <td><input type="number" class="cc-input" id="custom-guitar-threshold" value="-16" min="-60" max="0"></td>
-                                <td>启动: <span class="result-item" id="custom-guitar-attack">--</span>, 释放: <span class="result-item" id="custom-guitar-release">--</span></td>
+                                <td>启动: <span class="result-item" id="custom-guitar-attack">--</span>, 释放: <span class="result-item" id="custom-guitar-release">--</span>, 压缩比: <span class="result-item" id="custom-guitar-ratio">--</span></td>
                             </tr>
                             <tr>
-                                <td>master（总线）</td>
+                                <td>Master（总线）</td>
                                 <td><input type="number" class="cc-input" id="custom-master-threshold" value="-6" min="-60" max="0"></td>
-                                <td>启动: <span class="result-item" id="custom-master-attack">--</span>, 释放: <span class="result-item" id="custom-master-release">--</span></td>
+                                <td>启动: <span class="result-item" id="custom-master-attack">--</span>, 释放: <span class="result-item" id="custom-master-release">--</span>, 压缩比: <span class="result-item" id="custom-master-ratio">--</span></td>
                             </tr>
                         </tbody>
                     </table>
@@ -905,20 +906,20 @@
                     { value: "1/64", multiplier: 0.0625 }
                 ],
                 compressorPresets: [
-                    { id: "vocals", threshold: "-18", attackFactor: 0.0055, releaseFactor: 0.13 },
-                    { id: "drums", threshold: "-15", attackFactor: 0.002, releaseFactor: 0.07 },
-                    { id: "bass", threshold: "-12", attackFactor: 0.012, releaseFactor: 0.17 },
-                    { id: "piano", threshold: "-14", attackFactor: 0.008, releaseFactor: 0.195 },
-                    { id: "guitar", threshold: "-16", attackFactor: 0.00575, releaseFactor: 0.145 },
-                    { id: "master", threshold: "-6", attackFactor: 0.02375, releaseFactor: 0.2375 }
+                    { id: "vocals", threshold: "-18", attackFactor: 0.005, releaseFactor: 0.15, ratio: 4 },
+                    { id: "drums", threshold: "-15", attackFactor: 0.002, releaseFactor: 0.08, ratio: 6 },
+                    { id: "bass", threshold: "-12", attackFactor: 0.01, releaseFactor: 0.18, ratio: 4 },
+                    { id: "piano", threshold: "-14", attackFactor: 0.008, releaseFactor: 0.2, ratio: 3 },
+                    { id: "guitar", threshold: "-16", attackFactor: 0.006, releaseFactor: 0.16, ratio: 4 },
+                    { id: "master", threshold: "-6", attackFactor: 0.02, releaseFactor: 0.25, ratio: 2 }
                 ],
                 customCompressor: [
-                    { id: "vocals", attackFactor: 0.006, releaseFactor: 0.1375 },
-                    { id: "drums", attackFactor: 0.00225, releaseFactor: 0.0775 },
-                    { id: "bass", attackFactor: 0.013, releaseFactor: 0.18 },
-                    { id: "piano", attackFactor: 0.00875, releaseFactor: 0.205 },
-                    { id: "guitar", attackFactor: 0.00625, releaseFactor: 0.155 },
-                    { id: "master", attackFactor: 0.02625, releaseFactor: 0.2625 }
+                    { id: "vocals", attackFactor: 0.005, releaseFactor: 0.15, ratio: 4 },
+                    { id: "drums", attackFactor: 0.002, releaseFactor: 0.08, ratio: 6 },
+                    { id: "bass", attackFactor: 0.01, releaseFactor: 0.18, ratio: 4 },
+                    { id: "piano", attackFactor: 0.008, releaseFactor: 0.2, ratio: 3 },
+                    { id: "guitar", attackFactor: 0.006, releaseFactor: 0.16, ratio: 4 },
+                    { id: "master", attackFactor: 0.02, releaseFactor: 0.25, ratio: 2 }
                 ]
             };
 
@@ -1078,31 +1079,50 @@
 
             function calculateCompressorPresets(bpm) {
                 const quarter = 60000 / bpm;
+                const whole = quarter * 4;
                 const rows = ["vocals","drums","bass","piano","guitar","master"];
                 rows.forEach((id, idx) => {
                     const pre = configs.compressorPresets.find(p=>p.id===id);
                     if (!pre) return;
-                    const attack = Math.max(0.5, (quarter * pre.attackFactor).toFixed(2));
-                    const release = Math.min(2000, (quarter * 4 * pre.releaseFactor).toFixed(2));
+                    
+                    // 阈值影响因子（更简单的线性关系）
+                    const threshold = parseInt(pre.threshold);
+                    const thresholdFactor = Math.max(0.5, Math.min(1.5, (threshold + 30) / 30));
+                    
+                    // 统一计算方式
+                    const attack = Math.max(0.5, Math.min(100, (quarter * pre.attackFactor * thresholdFactor).toFixed(2)));
+                    const release = Math.max(10, Math.min(2000, (whole * pre.releaseFactor * thresholdFactor).toFixed(2)));
+                    const ratio = pre.ratio;
+                    
                     const aEl = document.getElementById(`${id}-attack`);
                     const rEl = document.getElementById(`${id}-release`);
+                    const ratioEl = document.getElementById(`${id}-ratio`);
                     const tone = (idx % 6) + 1;
+                    
                     if (aEl) { aEl.textContent = attack; aEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); aEl.classList.add(`num-tone-${tone}`); }
                     if (rEl) { rEl.textContent = release; rEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); rEl.classList.add(`num-tone-${tone}`); }
-                    setTimeout(() => { animateCell(aEl); setTimeout(()=>animateCell(rEl), 80); }, idx*100);
+                    if (ratioEl) { ratioEl.textContent = ratio + ':1'; ratioEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); ratioEl.classList.add(`num-tone-${tone}`); }
+                    
+                    setTimeout(() => { animateCell(aEl); setTimeout(()=>animateCell(rEl), 80); setTimeout(()=>animateCell(ratioEl), 160); }, idx*100);
                 });
                 attachCopyHints(); attachCopyListeners();
             }
 
             function calculateCustomCompressor(bpm, type, threshold) {
-                const quarter = 60000 / bpm; const whole = quarter * 4;
-                const cfg = configs.customCompressor.find(c=>c.id===type); if (!cfg) return null;
-                const tf = Math.max(0.1, Math.min(1, (threshold + 60) / 60));
-                const aF = cfg.attackFactor * (1 - (tf - 0.5) * 0.4);
-                const rF = cfg.releaseFactor * (1 + (tf - 0.5) * 0.4);
-                const attack = Math.max(0.5, Math.min(100, (quarter * aF).toFixed(2)));
-                const release = Math.max(10, Math.min(2000, (whole * rF).toFixed(2)));
-                return { attack, release };
+                const quarter = 60000 / bpm; 
+                const whole = quarter * 4;
+                const cfg = configs.customCompressor.find(c=>c.id===type); 
+                if (!cfg) return null;
+                
+                // 阈值影响因子（更简单的线性关系）
+                const thresholdFactor = Math.max(0.5, Math.min(1.5, (threshold + 30) / 30));
+                
+                // 统一计算方式
+                const attack = Math.max(0.5, Math.min(100, (quarter * cfg.attackFactor * thresholdFactor).toFixed(2)));
+                const release = Math.max(10, Math.min(2000, (whole * cfg.releaseFactor * thresholdFactor).toFixed(2)));
+                const ratio = cfg.ratio;
+                
+                return { attack, release, ratio };
             }
 
             // 计算所有自定义压缩（用于一键计算和兜底）
@@ -1116,10 +1136,12 @@
                     if (!res) return;
                     const aEl = document.getElementById(`custom-${type}-attack`);
                     const rEl = document.getElementById(`custom-${type}-release`);
+                    const ratioEl = document.getElementById(`custom-${type}-ratio`);
                     const tone = (idx % 6) + 1;
                     if (aEl) { aEl.textContent = res.attack; aEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); aEl.classList.add(`num-tone-${tone}`); }
                     if (rEl) { rEl.textContent = res.release; rEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); rEl.classList.add(`num-tone-${tone}`); }
-                    setTimeout(()=>{ animateCell(aEl); setTimeout(()=>animateCell(rEl), 80); }, idx*60);
+                    if (ratioEl) { ratioEl.textContent = res.ratio + ':1'; ratioEl.classList.remove('num-tone-1','num-tone-2','num-tone-3','num-tone-4','num-tone-5','num-tone-6'); ratioEl.classList.add(`num-tone-${tone}`); }
+                    setTimeout(()=>{ animateCell(aEl); setTimeout(()=>animateCell(rEl), 80); setTimeout(()=>animateCell(ratioEl), 160); }, idx*60);
                 });
                 attachCopyHints(); attachCopyListeners();
             }
@@ -1133,8 +1155,11 @@
                 const res = calculateCustomCompressor(bpm, type, th); if (!res) return;
                 const aEl = document.getElementById(`custom-${type}-attack`);
                 const rEl = document.getElementById(`custom-${type}-release`);
-                if (aEl) aEl.textContent = res.attack; if (rEl) rEl.textContent = res.release;
-                animateCell(aEl); setTimeout(()=>animateCell(rEl), 80);
+                const ratioEl = document.getElementById(`custom-${type}-ratio`);
+                if (aEl) aEl.textContent = res.attack; 
+                if (rEl) rEl.textContent = res.release;
+                if (ratioEl) ratioEl.textContent = res.ratio + ':1';
+                animateCell(aEl); setTimeout(()=>animateCell(rEl), 80); setTimeout(()=>animateCell(ratioEl), 160);
             }
 
             function calculateAll() {
